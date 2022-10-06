@@ -39,7 +39,7 @@ func unSpace(unclean string) string {
 	return unclean
 }
 
-func Parse(file string) map[string]string {
+func Parse(file string) map[string]map[string]string {
 	text, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Println(file)
@@ -47,7 +47,7 @@ func Parse(file string) map[string]string {
 	}
 	l := html.NewLexer(parse.NewInputBytes(text))
 	htmlData := html2data.FromFile(file)
-	var retData = make(map[string]string)
+	var retData = make(map[string]map[string]string)
 	for {
 		//tt, data := l.Next()
 		tt, _ := l.Next()
@@ -79,7 +79,12 @@ func Parse(file string) map[string]string {
 							for k, v := range value2 {
 								if len(strings.Join(v, "")) > 0 {
 									log.Println("key=", k, "value=", v, len(v))
-									retData[key] = unSpace(strings.ReplaceAll(strings.Join(v, " "), "\n", " "))
+									message := unSpace(strings.ReplaceAll(strings.Join(v, " "), "\n", " "))
+									description := message
+									unit := make(map[string]string)
+									unit["message"] = message
+									unit["description"] = description
+									retData[key] = unit
 									break
 								}
 							}
@@ -93,7 +98,7 @@ func Parse(file string) map[string]string {
 	}
 }
 
-func combine(parent, input map[string]string) map[string]string {
+func combine(parent, input map[string]map[string]string) map[string]map[string]string {
 	for k, v := range input {
 		parent[k] = v
 	}
@@ -101,7 +106,7 @@ func combine(parent, input map[string]string) map[string]string {
 }
 
 func main() {
-	var finalMap = make(map[string]string)
+	var finalMap = make(map[string]map[string]string)
 	err := filepath.Walk(".",
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
