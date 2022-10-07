@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"sort"
 
 	"fmt"
 	"io/ioutil"
@@ -75,17 +76,23 @@ func Parse(file string) map[string]map[string]string {
 						if err != nil {
 							panic(err)
 						}
-						if len(value2) > 0 {
-							for k, v := range value2 {
+						//fmt.Println("\n\t", len(value2), "\n\t")
+						//fmt.Println("\n\t", value2, "\n\t")
+
+						if len(value2) == 1 {
+							for _, v := range value2 {
 								if len(strings.Join(v, "")) > 0 {
-									log.Println("key=", k, "value=", v, len(v))
-									message := unSpace(strings.ReplaceAll(strings.Join(v, " "), "\n", " "))
-									description := message
-									unit := make(map[string]string)
-									unit["message"] = message
-									unit["description"] = description
-									retData[key] = unit
-									break
+									fmt.Println("\t", len(v))
+									//if len(v) == 1 {
+									if !strings.Contains(strings.Join(v, ""), "\n") {
+										message := unSpace(strings.ReplaceAll(strings.Join(v, " "), "\n", " "))
+										description := message
+										unit := make(map[string]string)
+										unit["message"] = message
+										unit["description"] = description
+										retData[key] = unit
+										break
+									}
 								}
 							}
 
@@ -124,6 +131,10 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
+				js := javascript(finalMap)
+				if err := ioutil.WriteFile("messages.js", []byte(js), 0644); err != nil {
+					log.Fatal(err)
+				}
 			}
 			return nil
 		})
@@ -132,9 +143,30 @@ func main() {
 	}
 }
 
-/*
-func parseAndPrint(fileName string) {
-	data := Parse(fileName)
-
+func javascript(finalMap map[string]map[string]string) string {
+	javascript := `
+function contentUpdateById(id, message) {
+	let infoTitle = document.getElementById(id);
+	let messageContent = chrome.i18n.getMessage(message);
+	if (infoTitle === null) {
+		console.log('content error', id, messageContent);
+		return;
+	}
+	infoTitle.textContent = messageContent;
 }
-*/
+`
+	keys := make([]string, 0)
+	for k, _ := range finalMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	//for _, k := range keys {
+	//fmt.Println(k, )
+	//}
+
+	//for key, _ := range finalMap {
+	for _, k := range keys {
+		javascript += fmt.Sprintf("contentUpdateById('%s', '%s');\n", k, k)
+	}
+	return javascript
+}
