@@ -1,5 +1,9 @@
 # messages-json-generator
 
+If you knew what you were doing when you started translating your WebExtension then you
+probably don't need this. If you didn't, this might help you find and fix your mistakes
+more quickly.
+
 This is a very messy but effective program for generating translatable `messages.json`
 files from the HTML files used to build pages and user-interfaces for WebExtensions in
 Firefox and Chrome. It scans a directory for HTML files, then scans the files for elements
