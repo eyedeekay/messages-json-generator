@@ -18,13 +18,10 @@ import (
 )
 
 func readHtmlFromFile(fileName string) (string, error) {
-
 	bs, err := ioutil.ReadFile(fileName)
-
 	if err != nil {
 		return "", err
 	}
-
 	return string(bs), nil
 }
 
@@ -66,38 +63,37 @@ func Parse(file string) map[string]map[string]string {
 				}
 				peek := string(dataAttr)
 				split := strings.SplitN(peek, "=", 2)
-				if len(split) == 2 {
-					value := strings.ReplaceAll(strings.ReplaceAll(split[0], " ", ""), "\"", "")
-					key := strings.ReplaceAll(strings.ReplaceAll(split[1], " ", ""), "\"", "")
-					if value == "id" {
-						var selector = make(map[string]string)
-						selector["ids"] = "#" + key
-						value2, err := htmlData.GetData(selector)
-						if err != nil {
-							panic(err)
-						}
-						//fmt.Println("\n\t", len(value2), "\n\t")
-						//fmt.Println("\n\t", value2, "\n\t")
-
-						if len(value2) == 1 {
-							for _, v := range value2 {
-								if len(strings.Join(v, "")) > 0 {
-									fmt.Println("\t", len(v))
-									//if len(v) == 1 {
-									if !strings.Contains(strings.Join(v, ""), "\n") {
-										message := unSpace(strings.ReplaceAll(strings.Join(v, " "), "\n", " "))
-										description := message
-										unit := make(map[string]string)
-										unit["message"] = message
-										unit["description"] = description
-										retData[key] = unit
-										break
+				if strings.Contains(string(dataAttr), ".png") || strings.Contains(string(dataAttr), ".js") || strings.Contains(string(dataAttr), "src=") {
+					break
+				} else {
+					if len(split) == 2 {
+						value := strings.ReplaceAll(strings.ReplaceAll(split[0], " ", ""), "\"", "")
+						key := strings.ReplaceAll(strings.ReplaceAll(split[1], " ", ""), "\"", "")
+						if value == "id" {
+							var selector = make(map[string]string)
+							selector["ids"] = "#" + key + ":not(:has(img))"
+							value2, err := htmlData.GetData(selector)
+							if err != nil {
+								panic(err)
+							}
+							log.Println(value2)
+							if len(value2) == 1 {
+								for _, v := range value2 {
+									if len(strings.Join(v, "")) > 0 {
+										if !strings.Contains(strings.Join(v, ""), "\n") {
+											message := unSpace(strings.ReplaceAll(strings.Join(v, " "), "\n", " "))
+											description := message
+											unit := make(map[string]string)
+											unit["message"] = message
+											unit["description"] = description
+											retData[key] = unit
+											break
+										}
 									}
 								}
-							}
 
+							}
 						}
-						//value2
 					}
 				}
 			}
@@ -122,7 +118,6 @@ func main() {
 			if strings.HasSuffix(path, ".html") {
 				fmt.Println(path, info.Size())
 				finalMap = combine(finalMap, Parse(path))
-				//parseAndPrint(path)
 				jsonStr, err := json.Marshal(finalMap)
 				if err != nil {
 					panic(err)
@@ -160,11 +155,6 @@ function contentUpdateById(id, message) {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	//for _, k := range keys {
-	//fmt.Println(k, )
-	//}
-
-	//for key, _ := range finalMap {
 	for _, k := range keys {
 		javascript += fmt.Sprintf("contentUpdateById('%s', '%s');\n", k, k)
 	}
